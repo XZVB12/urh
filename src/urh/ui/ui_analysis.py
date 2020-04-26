@@ -4,6 +4,7 @@
 #
 # WARNING! All changes made in this file will be lost!
 
+
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
@@ -117,17 +118,9 @@ class Ui_TabAnalysis(object):
         self.gridLayout_3 = QtWidgets.QGridLayout()
         self.gridLayout_3.setObjectName("gridLayout_3")
         self.label_5 = QtWidgets.QLabel(self.layoutWidget)
-        font = QtGui.QFont()
-        font.setBold(True)
-        font.setWeight(75)
-        self.label_5.setFont(font)
         self.label_5.setObjectName("label_5")
         self.gridLayout_3.addWidget(self.label_5, 1, 0, 1, 1)
         self.label_4 = QtWidgets.QLabel(self.layoutWidget)
-        font = QtGui.QFont()
-        font.setBold(True)
-        font.setWeight(75)
-        self.label_4.setFont(font)
         self.label_4.setObjectName("label_4")
         self.gridLayout_3.addWidget(self.label_4, 0, 0, 1, 1)
         self.lEncodingErrors = QtWidgets.QLabel(self.layoutWidget)
@@ -136,10 +129,6 @@ class Ui_TabAnalysis(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.lEncodingErrors.sizePolicy().hasHeightForWidth())
         self.lEncodingErrors.setSizePolicy(sizePolicy)
-        font = QtGui.QFont()
-        font.setBold(True)
-        font.setWeight(75)
-        self.lEncodingErrors.setFont(font)
         self.lEncodingErrors.setObjectName("lEncodingErrors")
         self.gridLayout_3.addWidget(self.lEncodingErrors, 2, 0, 1, 1)
         self.cbDecoding = QtWidgets.QComboBox(self.layoutWidget)
@@ -623,8 +612,6 @@ class Ui_TabAnalysis(object):
         self.lblLabelValues.setText(_translate("TabAnalysis", "Labels for message"))
         self.btnAddMessagetype.setToolTip(_translate("TabAnalysis", "Add a new message type"))
         self.btnAddMessagetype.setText(_translate("TabAnalysis", "Add new message type"))
-
-
 from urh.ui.views.LabelValueTableView import LabelValueTableView
 from urh.ui.views.MessageTypeTableView import MessageTypeTableView
 from urh.ui.views.ProtocolTableView import ProtocolTableView

@@ -53,7 +53,8 @@ class InsertSinePlugin(SignalEditorPlugin):
             self.__dialog_ui.doubleSpinBoxSampleRate.setValue(self.__sample_rate)
             self.__dialog_ui.doubleSpinBoxNSamples.setValue(self.__num_samples)
             self.__dialog_ui.lineEditTime.setValidator(
-                QRegExpValidator(QRegExp("[0-9]+([nmµ]*|([\.,][0-9]{1,3}[nmµ]*))?$")))
+                QRegExpValidator(QRegExp(r"[0-9]+([nmµ]?|([\.,][0-9]{1,3}[nmµ]?))?$"))
+            )
 
             scene_manager = SceneManager(self.dialog_ui.graphicsViewSineWave)
             self.__dialog_ui.graphicsViewSineWave.scene_manager = scene_manager
@@ -138,7 +139,7 @@ class InsertSinePlugin(SignalEditorPlugin):
 
     def get_insert_sine_dialog(self, original_data, position, sample_rate=None, num_samples=None) -> QDialog:
         if sample_rate is not None:
-            self.sample_rate = sample_rate
+            self.__sample_rate = sample_rate
             self.dialog_ui.doubleSpinBoxSampleRate.setValue(sample_rate)
 
         if num_samples is not None:

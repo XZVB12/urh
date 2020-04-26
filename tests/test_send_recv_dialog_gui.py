@@ -176,6 +176,7 @@ class TestSendRecvDialog(QtTestCase):
         sock.shutdown(socket.SHUT_RDWR)
         sock.close()
 
+        time.sleep(0.1)
         QTest.qWait(100)
 
         self.assertGreater(len(spectrum_dialog.scene_manager.peak), 0)
@@ -304,7 +305,7 @@ class TestSendRecvDialog(QtTestCase):
 
         self.assertFalse(generator_frame.network_sdr_plugin.is_sending)
 
-        QTest.qWait(50)
+        QTest.qWait(250)
         received_msgs = sniff_dialog.ui.txtEd_sniff_Preview.toPlainText().split("\n")
         orig_msgs = generator_frame.table_model.protocol.plain_bits_str
 
@@ -441,3 +442,13 @@ class TestSendRecvDialog(QtTestCase):
             self.assertEqual(dialog.device.num_sending_repeats, 10)
 
             dialog.close()
+
+    def test_device_discovery_button(self):
+        dialog = self.__get_recv_dialog()
+        dialog.device_settings_widget.ui.cbDevice.setCurrentText("HackRF")
+        # Check for segfaults https://github.com/jopohl/urh/issues/758
+        dialog.device_settings_widget.ui.btnRefreshDeviceIdentifier.click()
+
+        QApplication.instance().processEvents()
+        QTest.qWait(100)
+        self.assertTrue(True)
