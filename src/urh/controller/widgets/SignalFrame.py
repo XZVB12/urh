@@ -105,17 +105,22 @@ class SignalFrame(QFrame):
             self.configure_filter_action.triggered.connect(self.on_configure_filter_action_triggered)
             self.ui.btnFilter.setMenu(self.filter_menu)
 
-            self.auto_detect_menu = QMenu()
-            self.detect_noise_action = self.auto_detect_menu.addAction(self.tr("Additionally detect noise"))
-            self.detect_noise_action.setCheckable(True)
-            self.detect_noise_action.setChecked(False)
-            self.detect_modulation_action = self.auto_detect_menu.addAction(self.tr("Additionally detect modulation"))
-            self.detect_modulation_action.setCheckable(True)
-            self.detect_modulation_action.setChecked(False)
-            self.ui.btnAutoDetect.setMenu(self.auto_detect_menu)
+            if not self.signal.already_demodulated:
+                self.auto_detect_menu = QMenu()
+                self.detect_noise_action = self.auto_detect_menu.addAction(self.tr("Additionally detect noise"))
+                self.detect_noise_action.setCheckable(True)
+                self.detect_noise_action.setChecked(False)
+                self.detect_modulation_action = self.auto_detect_menu.addAction(self.tr("Additionally detect modulation"))
+                self.detect_modulation_action.setCheckable(True)
+                self.detect_modulation_action.setChecked(False)
+                self.ui.btnAutoDetect.setMenu(self.auto_detect_menu)
+
 
             if self.signal.wav_mode:
-                self.ui.lSignalTyp.setText("Signal (*.wav)")
+                if self.signal.already_demodulated:
+                    self.ui.lSignalTyp.setText("Demodulated (1-channel *.wav)")
+                else:
+                    self.ui.lSignalTyp.setText("Signal (*.wav)")
             else:
                 self.ui.lSignalTyp.setText("Complex Signal")
 
@@ -148,6 +153,16 @@ class SignalFrame(QFrame):
             self.ui.btnSaveSignal.hide()
 
             self.show_protocol(refresh=False)
+
+            if self.signal.already_demodulated:
+                self.ui.cbModulationType.hide()
+                self.ui.labelModulation.hide()
+                self.ui.labelNoise.hide()
+                self.ui.spinBoxNoiseTreshold.hide()
+                self.ui.btnAutoDetect.hide()
+                self.ui.cbSignalView.setCurrentIndex(1)
+                self.ui.cbSignalView.hide()
+                self.ui.lSignalViewText.hide()
 
         else:
             self.ui.lSignalTyp.setText("Protocol")
@@ -433,8 +448,8 @@ class SignalFrame(QFrame):
 
     def save_signal_as(self):
         try:
-            FileOperator.save_data_dialog(self.signal.name, self.signal.iq_array, self.signal.sample_rate,
-                                          self.signal.wav_mode)
+            FileOperator.ask_signal_file_name_and_save(self.signal.name, self.signal.iq_array, self.signal.sample_rate,
+                                                       self.signal.wav_mode)
         except Exception as e:
             Errors.exception(e)
 
@@ -445,7 +460,7 @@ class SignalFrame(QFrame):
             logger.exception(e)
             initial_name = "demodulated.complex"
 
-        filename = FileOperator.get_save_file_name(initial_name)
+        filename = FileOperator.ask_save_file_name(initial_name)
         if filename:
             try:
                 self.setCursor(Qt.WaitCursor)
@@ -731,6 +746,7 @@ class SignalFrame(QFrame):
         else:
             self.ui.stackedWidget.setCurrentWidget(self.ui.pageSignal)
             self.ui.gvSignal.scene_type = self.ui.cbSignalView.currentIndex()
+            self.scene_manager.mod_type = self.signal.modulation_type
             self.ui.gvSignal.redraw_view(reinitialize=True)
             self.ui.labelRSSI.show()
 
@@ -747,8 +763,18 @@ class SignalFrame(QFrame):
     def on_btn_autodetect_clicked(self):
         self.ui.btnAutoDetect.setEnabled(False)
         self.setCursor(Qt.WaitCursor)
-        success = self.signal.auto_detect(detect_modulation=self.detect_modulation_action.isChecked(),
-                                          detect_noise=self.detect_noise_action.isChecked())
+
+        try:
+            detect_modulation = self.detect_modulation_action.isChecked()
+        except AttributeError:
+            detect_modulation = False
+
+        try:
+            detect_noise = self.detect_noise_action.isChecked()
+        except AttributeError:
+            detect_noise = False
+        success = self.signal.auto_detect(detect_modulation=detect_modulation, detect_noise=detect_noise)
+
         self.ui.btnAutoDetect.setEnabled(True)
         self.unsetCursor()
         if not success:
@@ -1062,6 +1088,7 @@ class SignalFrame(QFrame):
 
             self.undo_stack.push(modulation_action)
 
+            self.scene_manager.mod_type = txt
             if self.ui.cbSignalView.currentIndex() == 1:
                 self.scene_manager.init_scene()
                 self.on_slider_y_scale_value_changed()
@@ -1287,7 +1314,7 @@ class SignalFrame(QFrame):
             logger.exception(e)
             initial_name = "spectrogram.ft"
 
-        filename = FileOperator.get_save_file_name(initial_name, caption="Export spectrogram")
+        filename = FileOperator.ask_save_file_name(initial_name, caption="Export spectrogram")
         if not filename:
             return
         QApplication.setOverrideCursor(Qt.WaitCursor)

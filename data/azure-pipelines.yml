@@ -29,7 +29,8 @@ jobs:
   - script: |
       python -m pip install --upgrade pip twine
       pip install -r data/requirements.txt
-      sudo apt-get install libhackrf-dev librtlsdr-dev xvfb libxkbcommon-x11-0 x11-utils
+      sudo apt-get install libhackrf-dev librtlsdr-dev xvfb libxkbcommon-x11-0 x11-utils libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0
+      pip install PyVirtualDisplay==0.2.5
       pip install twine setuptools wheel pytest pytest-xvfb pytest-cov pytest-faulthandler
       python -c "import tempfile, os; open(os.path.join(tempfile.gettempdir(), 'urh_releasing'), 'w').close()"
     displayName: 'Install dependencies'
@@ -252,6 +253,8 @@ jobs:
 
   - script: |
       brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/8d748e26ccc9afc8ea0d0201ae234fda35de721e/Formula/boost.rb
+      brew reinstall https://raw.githubusercontent.com/Homebrew/homebrew-core/a806a621ed3722fb580a58000fb274a2f2d86a6d/Formula/icu4c.rb
+      brew link icu4c --force
       cd /tmp
       wget https://github.com/libusb/libusb/releases/download/v1.0.22/libusb-1.0.22.tar.bz2
       tar xf libusb-1.0.22.tar.bz2

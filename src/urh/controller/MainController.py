@@ -147,6 +147,8 @@ class MainController(QMainWindow):
         self.ui.actionSave_project.setVisible(False)
         self.ui.actionClose_project.setVisible(False)
 
+        self.restoreGeometry(settings.read("{}/geometry".format(self.__class__.__name__), type=bytes))
+
     def __set_non_project_warning_visibility(self):
         show = settings.read("show_non_project_warning", True, bool) and not self.project_manager.project_loaded
         self.ui.labelNonProjectMode.setVisible(show)
@@ -297,7 +299,8 @@ class MainController(QMainWindow):
         if self.ui.actionAuto_detect_new_signals.isChecked() and not has_entry and not signal.changed:
             sig_frame.ui.stackedWidget.setCurrentWidget(sig_frame.ui.pageLoading)
             qApp.processEvents()
-            signal.auto_detect(detect_modulation=True, detect_noise=False)
+            if not signal.already_demodulated:
+                signal.auto_detect(detect_modulation=True, detect_noise=False)
             sig_frame.ui.stackedWidget.setCurrentWidget(sig_frame.ui.pageSignal)
 
         signal.blockSignals(False)
@@ -414,6 +417,7 @@ class MainController(QMainWindow):
 
     def closeEvent(self, event: QCloseEvent):
         self.save_project()
+        settings.write("{}/geometry".format(self.__class__.__name__), self.saveGeometry())
         super().closeEvent(event)
 
     def close_all_files(self):

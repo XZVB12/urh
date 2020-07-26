@@ -51,6 +51,8 @@ class Signal(QObject):
         self.noise_max_plot = 0
         self.block_protocol_update = False
 
+        self.iq_array = IQArray(None, np.int8, 1)
+
         self.wav_mode = filename.endswith(".wav")
         self.__changed = False
         if modulation is None:
@@ -60,6 +62,8 @@ class Signal(QObject):
         self.__center_spacing = 1  # required for higher order modulations
 
         self.__parameter_cache = {mod: {"center": None, "samples_per_symbol": None} for mod in self.MODULATION_TYPES}
+
+        self.__already_demodulated = False
 
         if len(filename) > 0:
             if self.wav_mode:
@@ -108,6 +112,7 @@ class Signal(QObject):
         self.iq_array = IQArray(None, np.float32, n=num_frames)
         if num_channels == 1:
             self.iq_array.real = np.multiply(1 / params["max"], np.subtract(data, params["center"]))
+            self.__already_demodulated = True
         elif num_channels == 2:
             self.iq_array.real = np.multiply(1 / params["max"], np.subtract(data[0::2], params["center"]))
             self.iq_array.imag = np.multiply(1 / params["max"], np.subtract(data[1::2], params["center"]))
@@ -125,6 +130,10 @@ class Signal(QObject):
         extracted_filename = os.path.join(QDir.tempPath(), obj.getnames()[0])
         self.__load_complex_file(extracted_filename)
         os.remove(extracted_filename)
+
+    @property
+    def already_demodulated(self) -> bool:
+        return self.__already_demodulated
 
     @property
     def sample_rate(self):
@@ -281,24 +290,40 @@ class Signal(QObject):
             self._qad = None
             self.clear_parameter_cache()
             self._noise_threshold = value
-            self.noise_min_plot = -value
-            self.noise_max_plot = value
+
+            middle = 0.5*sum(IQArray.min_max_for_dtype(self.iq_array.dtype))
+            a = self.max_amplitude * value / self.max_magnitude
+            self.noise_min_plot = middle - a
+            self.noise_max_plot = middle + a
             self.noise_threshold_changed.emit()
             if not self.block_protocol_update:
                 self.protocol_needs_update.emit()
 
     @property
+    def max_magnitude(self):
+        mi, ma = IQArray.min_max_for_dtype(self.iq_array.dtype)
+        return (2 * max(mi**2, ma**2))**0.5
+
+    @property
+    def max_amplitude(self):
+        mi, ma = IQArray.min_max_for_dtype(self.iq_array.dtype)
+        return 0.5 * (ma - mi)
+
+    @property
     def noise_threshold_relative(self):
-        return self.noise_threshold / (self.iq_array.maximum**2.0 + self.iq_array.minimum**2.0)**0.5
+        return self.noise_threshold / self.max_magnitude
 
     @noise_threshold_relative.setter
     def noise_threshold_relative(self, value: float):
-        self.noise_threshold = value * (self.iq_array.maximum**2.0 + self.iq_array.minimum**2.0)**0.5
+        self.noise_threshold = value * self.max_magnitude
 
     @property
     def qad(self):
         if self._qad is None:
-            self._qad = self.quad_demod()
+            if self.already_demodulated:
+                self._qad = np.ascontiguousarray(self.real_plot_data, dtype=self.real_plot_data.dtype)
+            else:
+                self._qad = self.quad_demod()
 
         return self._qad
 

@@ -15,8 +15,7 @@ class TestSignalTabGUI(QtTestCase):
         self.add_signal_to_form("esaver.complex16s")
         self.assertEqual(self.form.signal_tab_controller.num_frames, 1)
         self.form.close_all_files()
-        QApplication.instance().processEvents()
-        QTest.qWait(self.CLOSE_TIMEOUT)
+
         self.assertEqual(self.form.signal_tab_controller.num_frames, 0)
 
         # Add a bunch of signals
@@ -27,8 +26,6 @@ class TestSignalTabGUI(QtTestCase):
         self.assertEqual(self.form.signal_tab_controller.num_frames, num_frames)
 
         self.form.close_project()
-        QApplication.instance().processEvents()
-        QTest.qWait(self.CLOSE_TIMEOUT)
 
         self.add_signal_to_form("ask.complex")
         self.assertEqual(self.form.signal_tab_controller.num_frames, 1)
@@ -55,8 +52,6 @@ class TestSignalTabGUI(QtTestCase):
         self.assertNotEqual(samples_in_view, frame.ui.lSamplesInView.text())
 
     def test_load_proto(self):
-        QApplication.instance().processEvents()
-        QTest.qWait(self.WAIT_TIMEOUT_BEFORE_NEW)
         self.form.add_files([get_path_for_data_file("protocol.proto.xml")])
         self.assertEqual(self.form.signal_tab_controller.signal_frames[0].ui.lSignalTyp.text(), "Protocol")
 
@@ -215,8 +210,6 @@ class TestSignalTabGUI(QtTestCase):
         frame.ui.gvSignal.sel_area_start_end_changed.emit(start, end)
 
         self.assertEqual(self.form.signal_tab_controller.num_frames, 1)
-        QApplication.instance().processEvents()
-        QTest.qWait(self.WAIT_TIMEOUT_BEFORE_NEW)
         frame.ui.gvSignal.on_create_action_triggered()
         QApplication.instance().processEvents()
 
@@ -249,6 +242,17 @@ class TestSignalTabGUI(QtTestCase):
         text_edit.selectAll()
         menu = text_edit.create_context_menu()
         self.assertEqual(len([action for action in menu.actions() if action.text() == "Participant"]), 1)
+
+    def test_load_already_demodulated(self):
+        self.add_signal_to_form("demodulated.wav")
+        assert isinstance(self.form, MainController)
+
+        sig_frame = self.form.signal_tab_controller.signal_frames[0]
+        sig_frame.ui.cbProtoView.setCurrentText("Hex")
+        sig_frame.ui.spinBoxCenterOffset.setValue(0.0459)
+        sig_frame.ui.spinBoxCenterOffset.editingFinished.emit()
+
+        self.assertTrue(sig_frame.ui.txtEdProto.toPlainText().startswith("abcd"))
 
     def test_export_demodulated(self):
         self.add_signal_to_form("esaver.complex16s")

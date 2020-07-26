@@ -384,7 +384,7 @@ class GeneratorTabController(QWidget):
             except Exception as e:
                 logger.exception(e)
                 sample_rate = 1e6
-            FileOperator.save_data_dialog("generated", modulated_samples, sample_rate=sample_rate, parent=self)
+            FileOperator.ask_signal_file_name_and_save("generated", modulated_samples, sample_rate=sample_rate, parent=self)
         except Exception as e:
             Errors.exception(e)
             self.unsetCursor()
@@ -441,9 +441,14 @@ class GeneratorTabController(QWidget):
             fdc = FuzzingDialog(protocol=self.table_model.protocol, label_index=label_index,
                                 msg_index=msg_index, proto_view=view, parent=self)
             fdc.show()
-            fdc.finished.connect(self.refresh_label_list)
-            fdc.finished.connect(self.refresh_table)
-            fdc.finished.connect(self.set_fuzzing_ui_status)
+            fdc.finished.connect(self.on_fuzzing_dialog_finished)
+
+    @pyqtSlot()
+    def on_fuzzing_dialog_finished(self):
+        self.refresh_label_list()
+        self.refresh_table()
+        self.set_fuzzing_ui_status()
+        self.ui.tabWidget.setCurrentIndex(2)
 
     @pyqtSlot()
     def handle_plabel_fuzzing_state_changed(self):
@@ -603,7 +608,7 @@ class GeneratorTabController(QWidget):
 
     @pyqtSlot()
     def on_btn_save_clicked(self):
-        filename = FileOperator.get_save_file_name("profile.fuzz.xml", caption="Save fuzz profile")
+        filename = FileOperator.ask_save_file_name("profile.fuzz.xml", caption="Save fuzzing profile")
         if filename:
             self.table_model.protocol.to_xml_file(filename,
                                                   decoders=self.project_manager.decodings,
