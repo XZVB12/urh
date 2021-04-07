@@ -323,7 +323,7 @@ class Simulator(QObject):
             self.last_sent_message = msg
         else:
             # we have to receive a message
-            self.log_message("<i>Waiting for message {}</i>".format(msg.index()))
+            self.log_message("Waiting for message {}...".format(msg.index()))
             sniffer = self.sniffer
             if sniffer is None:
                 self.log_message("Fatal: No sniffer configured")
@@ -334,6 +334,7 @@ class Simulator(QObject):
             max_retries = self.project_manager.simulator_retries
             while self.is_simulating and not self.simulation_is_finished() and retry < max_retries:
                 received_msg = self.receive_message(sniffer)
+                self.log_message("  Received {} data bits".format(len(received_msg)))
 
                 if not self.is_simulating:
                     return
@@ -353,6 +354,7 @@ class Simulator(QObject):
                 received_msg.decoder = new_message.decoder
                 received_msg.message_type = new_message.message_type
 
+                self.log_message("  Check whether received data matches")
                 check_result, error_msg = self.check_message(received_msg, new_message, retry=retry,
                                                              msg_index=msg.index())
 
@@ -461,8 +463,7 @@ class Simulator(QObject):
         if len(sniffer.messages) > 0:
             return sniffer.messages.pop(0)
 
-        spy = QSignalSpy(sniffer.message_sniffed)
-        if spy.wait(self.project_manager.simulator_timeout_ms):
+        if QSignalSpy(sniffer.message_sniffed).wait(self.project_manager.simulator_timeout_ms):
             try:
                 return sniffer.messages.pop(0)
             except IndexError:
